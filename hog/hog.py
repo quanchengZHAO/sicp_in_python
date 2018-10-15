@@ -21,7 +21,17 @@ def roll_dice(num_rolls, dice=six_sided):
     # These assert statements ensure that num_rolls is a positive integer.
     assert type(num_rolls) == int, 'num_rolls must be an integer.'
     assert num_rolls > 0, 'Must roll at least once.'
-    "*** YOUR CODE HERE ***"
+    sum = 0
+    while num_rolls != 0:
+        roll_result = dice()
+        if roll_result == 1:
+            return sum
+        else:
+            sum += roll_result
+            num_rolls -= 1
+    return sum
+            
+        
 
 
 def take_turn(num_rolls, opponent_score, dice=six_sided):
@@ -35,7 +45,9 @@ def take_turn(num_rolls, opponent_score, dice=six_sided):
     assert num_rolls >= 0, 'Cannot roll a negative number of dice.'
     assert num_rolls <= 10, 'Cannot roll more than 10 dice.'
     assert opponent_score < 100, 'The game should be over.'
-    "*** YOUR CODE HERE ***"
+    if num_rolls == 0:
+        return max(opponent_score//10, opponent_score%10) + 1
+    return roll_dice(num_rolls, dice)
 
 # Playing a game
 
@@ -50,7 +62,7 @@ def select_dice(score, opponent_score):
     >>> select_dice(0, 0) == four_sided
     True
     """
-    "*** YOUR CODE HERE ***"
+    return four_sided if (score + opponent_score) % 7 == 0 else six_sided
 
 def other(who):
     """Return the other player, for a player WHO numbered 0 or 1.
