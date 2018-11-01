@@ -17,7 +17,7 @@ from collections import OrderedDict
 class Place:
     """A Place holds insects and has an exit to another Place."""
 
-    def __init__(self, name, exit=None):
+    def __init__(self, name, exit=None, entrance=None):
         """Create a Place with the given exit.
 
         name -- A string; the name of this Place.
@@ -27,9 +27,9 @@ class Place:
         self.exit = exit
         self.bees = []        # A list of Bees
         self.ant = None       # An Ant
-        self.entrance = None  # A Place
-        # Phase 1: Add an entrance to the exit
-        "*** YOUR CODE HERE ***"
+        self.entrance = entrance  # A Place
+        if exit is not None:
+            self.exit.entrance = self
 
     def add_insect(self, insect):
         """Add an Insect to this Place.
@@ -66,6 +66,7 @@ class Place:
 
 class Insect:
     """An Insect, the base class of Ant and Bee, has armor and a Place."""
+    watersafe = False
 
     def __init__(self, armor, place=None):
         """Create an Insect with an armor amount and a starting Place."""
@@ -106,6 +107,7 @@ class Bee(Insect):
     """A Bee moves from place to place, following exits and stinging ants."""
 
     name = 'Bee'
+    watersafe = True
 
     def sting(self, ant):
         """Attack an Ant, reducing the Ant's armor by 1."""
@@ -155,18 +157,19 @@ class HarvesterAnt(Ant):
 
     name = 'Harvester'
     implemented = True
+    food_cost = 2
+    armor = 1
 
     def action(self, colony):
         """Produce 1 additional food for the colony.
 
         colony -- The AntColony, used to access game state information.
         """
-        "*** YOUR CODE HERE ***"
+        colony.food += 1
 
 def random_or_none(l):
     """Return a random element of list l, or return None if l is empty."""
     return random.choice(l) if l else None
-
 
 class ThrowerAnt(Ant):
     """ThrowerAnt throws a leaf each turn at the nearest Bee in its range."""
@@ -174,6 +177,10 @@ class ThrowerAnt(Ant):
     name = 'Thrower'
     implemented = True
     damage = 1
+    food_cost = 4
+    armor = 1
+    min_range = 0
+    max_range = 10
 
     def nearest_bee(self, hive):
         """Return the nearest Bee in a Place that is not the Hive, connected to
@@ -182,9 +189,18 @@ class ThrowerAnt(Ant):
         This method returns None if there is no such Bee.
 
         Problem B5: This method returns None if there is no Bee in range.
+        Reduce armor by amount, and remove the insect from its place if it
+        has no armor remaining.
+
         """
-        "*** YOUR CODE HERE ***"
-        return random_or_none(self.place.bees)
+        nearest_place = self.place
+        while nearest_place is not hive:
+            if nearest_place.bees:
+                return random_or_none(nearest_place.bees)
+            nearest_place = nearest_place.entrance
+
+        return None
+        
 
     def throw_at(self, target):
         """Throw a leaf at the target Bee, reducing its armor."""
@@ -443,35 +459,66 @@ class Water(Place):
     def add_insect(self, insect):
         """Add insect if it is watersafe, otherwise reduce its armor to 0."""
         print('added', insect, insect.watersafe)
-        "*** YOUR CODE HERE ***"
-
+        super(Water, self).add_insect(insect)
+        if not insect.watersafe:
+            insect.reduce_armor(insect.armor)
 
 class FireAnt(Ant):
     """FireAnt cooks any Bee in its Place when it expires."""
 
     name = 'Fire'
     damage = 3
-    "*** YOUR CODE HERE ***"
-    implemented = False
+    food_cost = 4 
+    implemented = True
+    armor = 1
 
     def reduce_armor(self, amount):
-        "*** YOUR CODE HERE ***"
-
+        self.armor -= amount
+        if self.armor <= 0:
+            [bee.reduce_armor(self.damage) for bee in self.place.bees[:]]
+            self.place.remove_insect(self)
 
 class LongThrower(ThrowerAnt):
     """A ThrowerAnt that only throws leaves at Bees at least 4 places away."""
 
     name = 'Long'
-    "*** YOUR CODE HERE ***"
-    implemented = False
+    food_cost = 3
+    implemented = True
+    min_range = 4
+
+    def nearest_bee(self, hive):
+        nearest_place = self.place
+        distance = 0
+        while nearest_place is not hive:
+            if nearest_place.bees and distance >= self.min_range:
+                return random_or_none(nearest_place.bees)
+            nearest_place = nearest_place.entrance
+            distance += 1
+
+        return None
 
 
 class ShortThrower(ThrowerAnt):
     """A ThrowerAnt that only throws leaves at Bees within 3 places."""
 
     name = 'Short'
-    "*** YOUR CODE HERE ***"
-    implemented = False
+    food_cost = 3
+    max_range = 2
+    implemented = True
+
+    def nearest_bee(self, hive):
+        nearest_place = self.place
+        distance = 0
+        while nearest_place is not hive:
+            if distance <= self.max_range:
+                if nearest_place.bees:
+                    return random_or_none(nearest_place.bees)
+            else:
+                return None
+            nearest_place = nearest_place.entrance
+            distance += 1
+
+        return None
 
 
 class WallAnt(Ant):
