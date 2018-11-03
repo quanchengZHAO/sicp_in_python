@@ -6,6 +6,30 @@ To start a text-based game, run python3 ants.py
 To start a graphical game, run python3 ants_gui.py
 To test the project, run python3 ants_grader.py -v (individual test, run  python3 ants_grader.py -q 2)
 
-Run game with ten food at begining with one tunnel : run python3 ants_gui.py -t
-Run multi-tunnel game: run python3 ants_gui.py -full
-REAL CHALLENGE: run python3 ants_gui.py -full --insane
+Run defaut game: run python3 ants_gui.py
+-h, --help      Prints this help message
+-t, --ten       Start with ten food
+-f, --full      Loads a full layout and assault plan
+-w, --water     Loads a full layout with water
+-i, --insane    Loads a difficult assault plan
+
+Ants type:
+Harvester: Add food
+Thrower: Throw a leaf to the nearest bee in front
+Fire: When dead, reduce the armor of all Bees in the same Place
+Short: Throw at a Bee that is found after following at most 2 entrance transitions
+Long: Throw at a Bee that is found after following at least 4 entrance transitions
+Wall: Add some protection (no damage)
+Ninja: Damages all Bees that pass by, but is never seen.
+Scuba: Anti-water thrower
+Hungry: Eat a random Bee from its place and digest 3 turns
+Bodyguard: It can occupy the same Place as another ant.
+           It shields the other ant and protects it from damage.
+           Attacks should damage the BodyguardAnt first and only hurt the protected ant after the BodyguardAnt has perished.
+Slow: Applies a slow effect for 3 turns.
+Stun: Applies a stun effect for 1 turn.
+Queen: waterproof
+       Whenever the queen throws a leaf, she also doubles the damage of all other ants in the same tunnel with her,
+       including any ants protected by a bodyguard. Once any ant's damage has doubled, it cannot be doubled again.
+       If a bee ever enters the place occupied by the queen, then the bees immediately win the game.
+       The game ends even if the queen is protected by a bodyguard.

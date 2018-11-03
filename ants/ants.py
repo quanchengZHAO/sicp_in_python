@@ -47,6 +47,7 @@ class Place:
                    or (self.ant.can_contain(insect) and not insect.can_contain(self.ant)) \
                    or (not self.ant.can_contain(insect) and insect.can_contain(self.ant)), \
                 'Two ants in {0}'.format(self)
+
             if self.ant is None:
                 self.ant = insect
             elif insect.can_contain(self.ant):
@@ -67,13 +68,16 @@ class Place:
             self.bees.remove(insect)
         else:
             assert self.ant == insect, '{0} is not in {1}'.format(insect, self)
-            if self.hidden_insect is not None:
-                self.ant = self.hidden_insect
-                self.hidden_insect = None
-            else:
-                self.ant = None
 
-        insect.place = None
+            if type(self.ant).__name__ == 'QueenAnt' and self.ant.created == 1:
+                pass
+            else:
+                if self.hidden_insect is not None:
+                    self.ant = self.hidden_insect
+                    self.hidden_insect = None
+                else:
+                    self.ant = None
+                insect.place = None
 
     def __str__(self):
         return self.name
@@ -651,11 +655,12 @@ class QueenPlace:
     """
 
     def __init__(self, colony_queen, ant_queen):
-        "*** YOUR CODE HERE ***"
+        self.colony_queen = colony_queen
+        self.ant_queen = ant_queen
 
     @property
     def bees(self):
-        "*** YOUR CODE HERE ***"
+        return self.colony_queen.bees + self.ant_queen.bees
 
 
 class QueenAnt(ScubaThrower):
@@ -663,16 +668,59 @@ class QueenAnt(ScubaThrower):
 
     name = 'Queen'
     food_cost = 6
+    doubled_ants = []
     implemented = True
+    created = 0
+    setting = False
 
     def __init__(self):
-        ScubaThrower.__init__(self, 1)
-        "*** YOUR CODE HERE ***"
+        ScubaThrower.__init__(self)
+        self.created += 1
+        type(self).created = self.created
 
     def action(self, colony):
         """A queen ant throws a leaf, but also doubles the damage of ants
         in her tunnel.  Impostor queens do only one thing: die."""
-        "*** YOUR CODE HERE ***"
+
+        def double_ant_damage(ant, already_doubled):
+            if ant is not None and ant is not self:
+                already_doubled.append(ant)
+                if ant not in self.doubled_ants:
+                    ant.damage *= 2
+
+        def double_ants_damage():
+            already_doubled = []
+
+            def double_place(place):
+                double_ant_damage(place.hidden_insect, already_doubled)
+                double_ant_damage(place.ant, already_doubled)
+
+            if self.place is not None:
+                double_place(self.place)
+
+                front = self.place.entrance
+                while front is not None:
+                    double_place(front)
+                    front = front.entrance
+
+                back = self.place.exit
+                while back is not None:
+                    double_place(back)
+                    back = back.exit
+
+            # update doubled list (remove the died ants)
+            self.doubled_ants = already_doubled
+
+        if self.created == 1:
+            # first one, set queen place
+            if not self.setting:
+                colony.queen = QueenPlace(colony.queen, self.place)
+                self.setting = True
+            double_ants_damage()
+            super(QueenAnt, self).action(colony)
+        else:
+            self.reduce_armor(self.armor)
+
 
 
 class AntRemover(Ant):
@@ -695,18 +743,21 @@ def make_slow(action):
     action -- An action method of some Bee
     """
     original_action = action
+
     def act_times(duration):
 
         d = duration
+
         def action_replaced(colony):
             nonlocal d
             if d > 0:
                 d -= 1
                 if colony.time % 2 != 0:
-                    pass
+                    return
             original_action(colony)
 
         return action_replaced
+
     return act_times
 
 
@@ -716,6 +767,7 @@ def make_stun(action):
     action -- An action method of some Bee
     """
     original_action = action
+
     def act_times(duration):
         d = duration
 
@@ -727,6 +779,7 @@ def make_stun(action):
                 original_action(colony)
 
         return action_replaced
+
     return act_times
 
 
