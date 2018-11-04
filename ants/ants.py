@@ -69,7 +69,7 @@ class Place:
         else:
             assert self.ant == insect, '{0} is not in {1}'.format(insect, self)
 
-            if type(self.ant).__name__ == 'QueenAnt' and self.ant.created == 1:
+            if type(self.ant) == QueenAnt and self.ant.created == 1:
                 pass
             else:
                 if self.hidden_insect is not None:
